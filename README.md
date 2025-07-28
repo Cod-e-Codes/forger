@@ -1,7 +1,5 @@
 # Forger
 
-![Forger TUI Screenshot](docs/screenshot.png)
-
 Forger is a terminal-native developer dashboard and plugin toolkit built in Go, using [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss). It integrates multiple CLI tools into a unified, high‑performance TUI environment for static analysis, code navigation, environment inspection, and more.
 
 ## Quick Start
