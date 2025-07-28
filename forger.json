@@ -1,0 +1,8 @@
+{
+  "default": "ignoregrets",
+  "enabled": [
+    "ignoregrets",
+    "codesleuth",
+    "marchat"
+  ]
+}
