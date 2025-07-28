@@ -15,23 +15,30 @@ Forger is a **terminal-native developer toolkit** that provides a unified interf
 - **Keyboard-Driven**: Navigate between plugins using arrow keys and keyboard shortcuts
 - **Extensible**: Easy to add new plugins or modify existing ones
 - **Fast & Lightweight**: No GUI frameworks or heavy dependencies
+- **Real Tool Integration**: Connects to actual CLI tools (marchat, ignoregrets, codesleuth)
 
 ## Current Plugins
 
-### IgnoreGrets
+### IgnoreGrets ✅ **Integrated**
 - **Purpose**: Snapshot management and Git workflow tools
 - **Features**: Create, list, restore, and delete snapshots
+- **Integration**: Direct CLI wrapper with real ignoregrets commands
 - **Use Case**: Managing code states and quick rollbacks
+- **Installation**: `go install github.com/Cod-e-Codes/ignoregrets@latest`
 
-### CodeSleuth  
+### CodeSleuth ✅ **Integrated**  
 - **Purpose**: Static code analysis and IR visualization
 - **Features**: Analyze files, show IR diagrams, find references, call graphs
+- **Integration**: CLI wrapper with JSON output parsing
 - **Use Case**: Understanding code structure and dependencies
+- **Installation**: `go install github.com/Cod-e-Codes/codesleuth@latest`
 
-### MarChat
+### MarChat ✅ **Integrated**
 - **Purpose**: Terminal-based chat interface
 - **Features**: Send messages, save/load chat history, clear conversations
+- **Integration**: Direct integration with marchat server/client
 - **Use Case**: Developer communication and note-taking
+- **Installation**: `go install github.com/Cod-e-Codes/marchat@latest`
 
 ## Quick Start
 
@@ -40,16 +47,51 @@ Forger is a **terminal-native developer toolkit** that provides a unified interf
    go build ./cmd/forger
    ```
 
-2. **Run Forger**:
+2. **Install required tools** (optional, for full functionality):
+   ```bash
+   # Install marchat for chat functionality
+   go install github.com/Cod-e-Codes/marchat@latest
+   
+   # Install ignoregrets for snapshot management
+   go install github.com/Cod-e-Codes/ignoregrets@latest
+   
+   # Install codesleuth for code analysis
+   go install github.com/Cod-e-Codes/codesleuth@latest
+   ```
+
+3. **Run Forger**:
    ```bash
    ./forger
    ```
 
-3. **Navigate the interface**:
+4. **Navigate the interface**:
    - Use **Up/Down arrows** to switch between plugins
    - Press **'c'** to open MarChat overlay
    - Press **'q'** or **Ctrl+C** to quit
    - Press **'esc'** to close overlays
+
+## Plugin-Specific Controls
+
+### IgnoreGrets
+- **S**: Create snapshot
+- **R**: Restore snapshot (preview)
+- **D**: Delete old snapshots
+- **L**: Refresh list
+- **↑/↓**: Navigate snapshots
+- **Enter**: Restore selected snapshot
+
+### CodeSleuth
+- **A**: Analyze current directory
+- **I**: Show IR diagram
+- **R**: Find references
+- **C**: Show call graph
+- **↑/↓**: Navigate files
+- **Enter**: Analyze selected file
+
+### MarChat
+- **Enter**: Send message
+- **Backspace**: Edit message
+- **Ctrl+C**: Quit
 
 ## Configuration
 
@@ -78,9 +120,9 @@ forger/
 │   ├── core/           # Core runtime and plugin management
 │   ├── types/          # Shared interfaces and types
 │   └── plugins/        # Individual plugin implementations
-│       ├── ignoregrets/
-│       ├── codesleuth/
-│       └── marchat/
+│       ├── ignoregrets/ # Git snapshot management
+│       ├── codesleuth/  # Code analysis
+│       └── marchat/     # Terminal chat
 └── forger.json         # Configuration file
 ```
 
@@ -109,18 +151,36 @@ go build ./cmd/forger
 
 ## Status
 
-This is a **pre-release version** with basic plugin implementations. The current plugins provide placeholder interfaces - they demonstrate the architecture but don't yet integrate with the actual CLI tools they represent.
+This is a **working release** with real integrations:
+
+- ✅ **IgnoreGrets**: Full CLI integration with snapshot management
+- ✅ **CodeSleuth**: Code analysis with JSON output parsing
+- ✅ **MarChat**: Chat interface with server detection
+- 🔄 **Future**: Additional plugins (ascii-colorizer, parsec, etc.)
+
+## Tool Dependencies
+
+For full functionality, install these tools:
+
+```bash
+# Required for chat functionality
+go install github.com/Cod-e-Codes/marchat@latest
+
+# Required for snapshot management
+go install github.com/Cod-e-Codes/ignoregrets@latest
+
+# Required for code analysis
+go install github.com/Cod-e-Codes/codesleuth@latest
+```
 
 ## Future Enhancements
 
-- Integration with actual CLI tools (ignoregrets, codesleuth, marchat)
-- Real snapshot management and Git operations
-- Static analysis with IR visualization
-- Terminal chat with message persistence
-- Additional plugins (ascii-colorizer, parsec, etc.)
+- Integration with additional tools (ascii-colorizer, parsec, etc.)
 - Plugin registry and installation system
 - Git-aware workspace detection
 - Custom dashboards and layouts
+- Real-time updates and notifications
+- Plugin configuration management
 
 ## License
 
