@@ -33,3 +33,6 @@ go.work.sum
 
 *.tar.gz
 *.log
+
+# IgnoreGrets snapshots
+.ignoregrets/snapshots/
