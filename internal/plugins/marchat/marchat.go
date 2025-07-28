@@ -23,6 +23,7 @@ type Plugin struct {
 	connected     bool
 	errorMsg      string
 	result        string // Add result field for command feedback
+	serverProcess *os.Process
 }
 
 type Message struct {
@@ -43,26 +44,54 @@ func New(ctx *types.Context) types.Plugin {
 }
 
 func (p *Plugin) Init() tea.Cmd {
-	return p.checkServer()
+	return p.startServer()
 }
 
-func (p *Plugin) checkServer() tea.Cmd {
+func (p *Plugin) startServer() tea.Cmd {
 	return func() tea.Msg {
-		// Check if marchat server is running using full path
-		marchatClientPath := "C:\\Users\\codyl\\go\\bin\\marchat-client.exe"
+		// Check if we have the marchat server executable
+		marchatServerPath := os.Getenv("GOPATH") + "\\bin\\marchat-server.exe"
 
-		// Debug: print the path being used
-		fmt.Printf("DEBUG: Looking for marchat-client at: %s\n", marchatClientPath)
+		fmt.Printf("DEBUG: MarChat checking server at: %s\n", marchatServerPath)
 
-		// Debug: check if file exists
-		if _, err := os.Stat(marchatClientPath); os.IsNotExist(err) {
-			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("marchat-client not found at: %s", marchatClientPath)}
+		// Check if server executable exists
+		if _, err := os.Stat(marchatServerPath); os.IsNotExist(err) {
+			fmt.Printf("DEBUG: MarChat server not found: %v\n", err)
+			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("marchat-server not found at: %s", marchatServerPath)}
 		}
 
-		cmd := exec.Command(marchatClientPath, "--help")
-		if err := cmd.Run(); err != nil {
-			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("marchat-client failed to run: %v", err)}
+		fmt.Printf("DEBUG: MarChat server found, starting...\n")
+
+		// Start the server using the executable
+		cmd := exec.Command(marchatServerPath, "-config", "server_config.json")
+		// Don't redirect stdout/stderr so we can see any error messages
+
+		if err := cmd.Start(); err != nil {
+			fmt.Printf("DEBUG: MarChat failed to start server: %v\n", err)
+			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("failed to start marchat-server: %v", err)}
 		}
+
+		fmt.Printf("DEBUG: MarChat server started, PID: %d\n", cmd.Process.Pid)
+
+		// Store the process so we can kill it later
+		p.serverProcess = cmd.Process
+
+		// Wait longer for server to start
+		time.Sleep(5 * time.Second)
+
+		// Check if server is responding by trying to connect
+		marchatClientPath := os.Getenv("GOPATH") + "\\bin\\marchat-client.exe"
+		testCmd := exec.Command(marchatClientPath, "-username", "ForgerUser", "-admin", "-admin-key", "forger-admin-key", "-server", "ws://localhost:9090/ws")
+
+		fmt.Printf("DEBUG: MarChat testing server connection...\n")
+		output, err := testCmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("DEBUG: MarChat server test failed: %v\nOutput: %s\n", err, string(output))
+			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("server not responding: %v", err)}
+		}
+
+		fmt.Printf("DEBUG: MarChat server test output: %s\n", string(output))
+		fmt.Printf("DEBUG: MarChat server is responding!\n")
 		return ServerCheckMsg{Available: true}
 	}
 }
@@ -79,12 +108,17 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			if p.input != "" {
-				// Send message logic would go here
-				p.messages = append(p.messages, Message{Username: "You", Content: p.input, Timestamp: time.Now(), Type: "message"})
-				if p.connected {
-					p.result = "✅ Message sent: " + p.input
+				// Send message using marchat-client
+				marchatClientPath := os.Getenv("GOPATH") + "\\bin\\marchat-client.exe"
+				cmd := exec.Command(marchatClientPath, "-username", "ForgerUser", "-admin", "-admin-key", "forger-admin-key", "-server", "ws://localhost:9090/ws")
+				cmd.Stdin = strings.NewReader(p.input + "\n")
+
+				err := cmd.Run()
+				if err != nil {
+					p.result = "❌ Failed to send message: " + err.Error()
 				} else {
-					p.result = "❌ Not connected to server"
+					p.result = "✅ Message sent: " + p.input
+					p.messages = append(p.messages, Message{Username: "You", Content: p.input, Timestamp: time.Now(), Type: "message"})
 				}
 				p.input = ""
 			}
@@ -93,7 +127,16 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 				p.input = p.input[:len(p.input)-1]
 			}
 		case "ctrl+c":
+			// Clean up server process
+			if p.serverProcess != nil {
+				p.serverProcess.Kill()
+			}
 			return p, tea.Quit
+		default:
+			// Handle regular character input
+			if len(msg.String()) == 1 && msg.String() != "tab" && msg.String() != "shift+tab" {
+				p.input += msg.String()
+			}
 		}
 	}
 	return p, nil
@@ -120,10 +163,10 @@ func (p *Plugin) View() string {
 		sb.WriteString("│                                                             │\n")
 
 		// Show connection status
-		if p.connected {
-			sb.WriteString("│  🔗 Connected to server                               │\n")
+		if p.serverRunning {
+			sb.WriteString("│  🔗 Server started and running                        │\n")
 		} else {
-			sb.WriteString("│  🔌 Disconnected from server                          │\n")
+			sb.WriteString("│  🔌 Server not running                               │\n")
 		}
 		sb.WriteString("│                                                             │\n")
 

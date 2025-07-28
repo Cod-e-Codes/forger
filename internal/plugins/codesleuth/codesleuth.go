@@ -1,7 +1,6 @@
 package codesleuth
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,35 +14,14 @@ import (
 type Plugin struct {
 	ctx           *types.Context
 	available     bool
-	analysisFiles []AnalysisFile
 	selectedIndex int
-	output        string
 	result        string // Add result field for command feedback
-}
-
-type AnalysisFile struct {
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	Type       string `json:"type"`
-	Lines      int    `json:"lines"`
-	Functions  int    `json:"functions"`
-	Variables  int    `json:"variables"`
-	DeadCode   int    `json:"dead_code"`
-	Complexity int    `json:"complexity"`
-}
-
-type AnalysisResult struct {
-	ProgramName string         `json:"program_name"`
-	Author      string         `json:"author"`
-	Files       []AnalysisFile `json:"files"`
-	Summary     string         `json:"summary"`
 }
 
 func New(ctx *types.Context) types.Plugin {
 	return &Plugin{
 		ctx:           ctx,
 		selectedIndex: 0,
-		analysisFiles: []AnalysisFile{},
 	}
 }
 
@@ -55,10 +33,6 @@ func (p *Plugin) checkAvailability() tea.Cmd {
 	return func() tea.Msg {
 		codesleuthPath := "C:\\Users\\codyl\\go\\bin\\codesleuth.exe"
 
-		// Debug: print the path being used
-		fmt.Printf("DEBUG: Looking for codesleuth at: %s\n", codesleuthPath)
-
-		// Debug: check if file exists
 		if _, err := os.Stat(codesleuthPath); os.IsNotExist(err) {
 			return AvailabilityMsg{Available: false, Error: fmt.Sprintf("codesleuth not found at: %s", codesleuthPath)}
 		}
@@ -76,10 +50,6 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 	case AvailabilityMsg:
 		p.available = msg.Available
 		return p, nil
-	case AnalysisResultMsg:
-		p.analysisFiles = msg.Result.Files
-		p.output = msg.Result.Summary
-		return p, nil
 	case CommandResultMsg:
 		// Display command results
 		if msg.Success {
@@ -90,32 +60,14 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 		return p, nil
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "up":
-			if p.selectedIndex > 0 {
-				p.selectedIndex--
-			}
-		case "down":
-			if p.selectedIndex < len(p.analysisFiles)-1 {
-				p.selectedIndex++
-			}
-		case "enter":
-			if len(p.analysisFiles) > 0 && p.selectedIndex < len(p.analysisFiles) {
-				return p, func() tea.Msg { return p.analyzeFile(p.analysisFiles[p.selectedIndex]) }
-			}
 		case "a":
 			return p, p.analyzeCurrentDirectory
 		case "i":
-			if len(p.analysisFiles) > 0 {
-				return p, func() tea.Msg { return p.showIRDiagram(p.analysisFiles[p.selectedIndex]) }
-			}
+			return p, p.showIRDiagram
 		case "r":
-			if len(p.analysisFiles) > 0 {
-				return p, func() tea.Msg { return p.findReferences(p.analysisFiles[p.selectedIndex]) }
-			}
-		case "c":
-			if len(p.analysisFiles) > 0 {
-				return p, func() tea.Msg { return p.showCallGraph(p.analysisFiles[p.selectedIndex]) }
-			}
+			return p, p.findReferences
+		case "g":
+			return p, p.showCallGraph
 		case "ctrl+c":
 			return p, tea.Quit
 		}
@@ -125,107 +77,70 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 
 func (p *Plugin) analyzeCurrentDirectory() tea.Msg {
 	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "analyze", ".", "--json")
-	output, err := cmd.Output()
+	cmd := exec.Command(codesleuthPath, "analyze", ".")
+	output, err := cmd.CombinedOutput() // Use CombinedOutput to get both stdout and stderr
 	if err != nil {
-		return AnalysisResultMsg{
-			Result: AnalysisResult{
-				ProgramName: "Error",
-				Author:      "Unknown",
-				Files:       []AnalysisFile{},
-				Summary:     fmt.Sprintf("Error analyzing directory: %v", err),
-			},
+		return CommandResultMsg{
+			Success: false,
+			Output:  fmt.Sprintf("CodeSleuth only supports COBOL files. Current directory contains Go files.\nError: %v\nOutput: %s", err, string(output)),
 		}
 	}
 
-	var result AnalysisResult
-	if err := json.Unmarshal(output, &result); err != nil {
-		return AnalysisResultMsg{
-			Result: AnalysisResult{
-				ProgramName: "Parse Error",
-				Author:      "Unknown",
-				Files:       []AnalysisFile{},
-				Summary:     fmt.Sprintf("Error parsing analysis: %v", err),
-			},
-		}
+	// Since CodeSleuth doesn't support JSON output, we'll just show the raw output
+	return CommandResultMsg{
+		Success: true,
+		Output:  fmt.Sprintf("CodeSleuth analysis output:\n%s", string(output)),
 	}
-
-	return AnalysisResultMsg{Result: result}
 }
 
-func (p *Plugin) analyzeFile(file AnalysisFile) tea.Msg {
+func (p *Plugin) showIRDiagram() tea.Msg {
 	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--json")
-	output, err := cmd.Output()
+	cmd := exec.Command(codesleuthPath, "analyze", ".", "--mermaid")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
 			Success: false,
-			Output:  fmt.Sprintf("Error analyzing file %s: %v", file.Name, err),
-		}
-	}
-
-	var result AnalysisResult
-	if err := json.Unmarshal(output, &result); err != nil {
-		return CommandResultMsg{
-			Success: false,
-			Output:  fmt.Sprintf("Error parsing analysis for %s: %v", file.Name, err),
+			Output:  fmt.Sprintf("Error generating IR diagram: %v\n%s", err, string(output)),
 		}
 	}
 
 	return CommandResultMsg{
 		Success: true,
-		Output:  fmt.Sprintf("Analysis for %s:\n%s", file.Name, result.Summary),
+		Output:  fmt.Sprintf("IR Diagram:\n%s", string(output)),
 	}
 }
 
-func (p *Plugin) showIRDiagram(file AnalysisFile) tea.Msg {
+func (p *Plugin) findReferences() tea.Msg {
 	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--mermaid")
-	output, err := cmd.Output()
+	cmd := exec.Command(codesleuthPath, "analyze", ".", "--references")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
 			Success: false,
-			Output:  fmt.Sprintf("Error generating IR diagram for %s: %v", file.Name, err),
+			Output:  fmt.Sprintf("Error finding references: %v\n%s", err, string(output)),
 		}
 	}
 
 	return CommandResultMsg{
 		Success: true,
-		Output:  fmt.Sprintf("IR Diagram for %s:\n%s", file.Name, output),
+		Output:  fmt.Sprintf("References:\n%s", string(output)),
 	}
 }
 
-func (p *Plugin) findReferences(file AnalysisFile) tea.Msg {
+func (p *Plugin) showCallGraph() tea.Msg {
 	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--references")
-	output, err := cmd.Output()
+	cmd := exec.Command(codesleuthPath, "analyze", ".", "--call-graph")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
 			Success: false,
-			Output:  fmt.Sprintf("Error finding references for %s: %v", file.Name, err),
+			Output:  fmt.Sprintf("Error generating call graph: %v\n%s", err, string(output)),
 		}
 	}
 
 	return CommandResultMsg{
 		Success: true,
-		Output:  fmt.Sprintf("References for %s:\n%s", file.Name, output),
-	}
-}
-
-func (p *Plugin) showCallGraph(file AnalysisFile) tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--call-graph")
-	output, err := cmd.Output()
-	if err != nil {
-		return CommandResultMsg{
-			Success: false,
-			Output:  fmt.Sprintf("Error generating call graph for %s: %v", file.Name, err),
-		}
-	}
-
-	return CommandResultMsg{
-		Success: true,
-		Output:  fmt.Sprintf("Call Graph for %s:\n%s", file.Name, output),
+		Output:  fmt.Sprintf("Call Graph:\n%s", string(output)),
 	}
 }
 
@@ -272,32 +187,17 @@ func (p *Plugin) View() string {
 		sb.WriteString("│  Analysis Files:                                          │\n")
 		sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
 
-		if len(p.analysisFiles) == 0 {
-			sb.WriteString("│  │ No files analyzed                                  │ │\n")
-			sb.WriteString("│  │ Press 'A' to analyze current directory            │ │\n")
-		} else {
-			for i, file := range p.analysisFiles {
-				prefix := "  "
-				if i == p.selectedIndex {
-					prefix = "> "
-				}
-				line := fmt.Sprintf("│  %s%s (%s) - %d lines", prefix, file.Name, file.Type, file.Lines)
-				if len(line) > 55 {
-					line = line[:52] + "..."
-				}
-				sb.WriteString(fmt.Sprintf("│  %-55s │\n", line))
-			}
-		}
+		sb.WriteString("│  │ No COBOL files analyzed                              │ │\n")
+		sb.WriteString("│  │ Press 'A' to analyze current directory            │ │\n")
+		sb.WriteString("│  │ (Note: CodeSleuth only supports COBOL files)      │ │\n")
 
 		sb.WriteString("│  └─────────────────────────────────────────────────────┘ │\n")
 		sb.WriteString("│                                                             │\n")
 		sb.WriteString("│  Commands:                                                │\n")
-		sb.WriteString("│  • A: Analyze current directory                          │\n")
+		sb.WriteString("│  • A: Analyze current directory (COBOL files only)      │\n")
 		sb.WriteString("│  • I: Show IR diagram                                    │\n")
 		sb.WriteString("│  • R: Find references                                    │\n")
-		sb.WriteString("│  • C: Show call graph                                    │\n")
-		sb.WriteString("│  • ↑/↓: Navigate files                                   │\n")
-		sb.WriteString("│  • Enter: Analyze selected file                          │\n")
+		sb.WriteString("│  • G: Show call graph                                    │\n")
 	}
 
 	sb.WriteString("│                                                             │\n")
@@ -313,10 +213,6 @@ func (p *Plugin) Name() string {
 type AvailabilityMsg struct {
 	Available bool
 	Error     string
-}
-
-type AnalysisResultMsg struct {
-	Result AnalysisResult
 }
 
 type CommandResultMsg struct {

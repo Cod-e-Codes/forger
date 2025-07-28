@@ -31,14 +31,15 @@ Forger is a **terminal-native developer toolkit** that provides a unified interf
 - **Features**: Analyze files, show IR diagrams, find references, call graphs
 - **Integration**: CLI wrapper with JSON output parsing
 - **Use Case**: Understanding code structure and dependencies
-- **Status**: ✅ **Working** - Available and functional
+- **Status**: ✅ **Working** - Available and functional (COBOL files only)
 
-### MarChat ✅ **Fully Integrated**
+### MarChat ⚠️ **Partially Integrated**
 - **Purpose**: Terminal-based chat interface
 - **Features**: Send messages, save/load chat history, clear conversations
 - **Integration**: Direct integration with marchat server/client
 - **Use Case**: Developer communication and note-taking
-- **Status**: ✅ **Working** - Available and functional
+- **Status**: ⚠️ **Server Configuration Required** - Server starts but client connection needs manual setup
+- **Note**: Requires `server_config.json` file with admin credentials
 
 ## Quick Start
 
@@ -104,7 +105,20 @@ cd ..
 Remove-Item -Recurse -Force temp-codesleuth
 ```
 
-### 3. Verify Installation
+### 3. Configure MarChat (Required)
+
+Create a `server_config.json` file in the Forger directory:
+
+```json
+{
+  "port": 9090,
+  "admin_key": "forger-admin-key",
+  "theme": "patriot",
+  "admins": ["ForgerUser"]
+}
+```
+
+### 4. Verify Installation
 ```bash
 # Test that all executables are available
 & "$env:GOPATH\bin\marchat-client.exe" --help
@@ -112,12 +126,12 @@ Remove-Item -Recurse -Force temp-codesleuth
 & "$env:GOPATH\bin\codesleuth.exe" --help
 ```
 
-### 4. Run Forger
+### 5. Run Forger
 ```bash
 ./forger
 ```
 
-### 5. Navigate the Interface
+### 6. Navigate the Interface
 - Use **Tab** to switch between plugins
 - Use **Shift+Tab** to switch backwards between plugins
 - Press **'c'** to open MarChat overlay
@@ -135,10 +149,10 @@ Remove-Item -Recurse -Force temp-codesleuth
 - **Enter**: Restore selected snapshot
 
 ### CodeSleuth
-- **A**: Analyze current directory
+- **A**: Analyze current directory (COBOL files only)
 - **I**: Show IR diagram
 - **R**: Find references
-- **C**: Show call graph
+- **G**: Show call graph
 - **↑/↓**: Navigate files (when plugin is active)
 - **Enter**: Analyze selected file
 
@@ -195,11 +209,17 @@ If plugins show as "Not Available":
    go build ./cmd/forger
    ```
 
+### MarChat Issues
+- **Server won't start**: Ensure `server_config.json` exists with proper admin configuration
+- **Client can't connect**: Verify server is running on port 9090
+- **Admin authentication**: Use `ForgerUser` as username with admin key `forger-admin-key`
+
 ### Common Issues
 
 - **"Plugin not found"**: Ensure the plugin is listed in `forger.json` under `enabled`
 - **"Executable not found"**: Verify the tool was built and copied to `GOPATH/bin` correctly
 - **"Permission denied"**: Run PowerShell as Administrator if needed
+- **CodeSleuth errors**: Remember that CodeSleuth only supports COBOL files currently
 
 ## Architecture
 
@@ -213,7 +233,8 @@ forger/
 │       ├── ignoregrets/ # Git snapshot management
 │       ├── codesleuth/  # Code analysis
 │       └── marchat/     # Terminal chat
-└── forger.json         # Configuration file
+├── forger.json         # Configuration file
+└── server_config.json  # MarChat server configuration
 ```
 
 ## Development
@@ -241,18 +262,18 @@ go build ./cmd/forger
 
 ## Status
 
-This is a **fully working release** with real integrations:
+This is a **working release** with real integrations:
 
 - ✅ **IgnoreGrets**: Full CLI integration with snapshot management
-- ✅ **CodeSleuth**: Code analysis with JSON output parsing  
-- ✅ **MarChat**: Chat interface with server detection
+- ✅ **CodeSleuth**: Code analysis with JSON output parsing (COBOL files only)
+- ⚠️ **MarChat**: Chat interface with server auto-start (requires manual client setup)
 - 🔄 **Future**: Additional plugins (ascii-colorizer, parsec, etc.)
 
 ## Tool Dependencies
 
 For full functionality, these tools must be installed in `GOPATH/bin`:
 
-- **MarChat**: `marchat-client.exe` and `marchat-server.exe`
+- **MarChat**: `marchat-client.exe` and `marchat-server.exe` (requires `server_config.json`)
 - **IgnoreGrets**: `ignoregrets.exe`
 - **CodeSleuth**: `codesleuth.exe`
 
@@ -264,6 +285,7 @@ For full functionality, these tools must be installed in `GOPATH/bin`:
 - Custom dashboards and layouts
 - Real-time updates and notifications
 - Plugin configuration management
+- Improved MarChat integration with automatic client connection
 
 ## License
 

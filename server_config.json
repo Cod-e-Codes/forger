@@ -1,0 +1,6 @@
+{
+  "port": 9090,
+  "admin_key": "forger-admin-key",
+  "theme": "patriot",
+  "admins": ["ForgerUser"]
+}

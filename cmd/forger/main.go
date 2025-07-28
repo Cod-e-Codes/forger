@@ -34,21 +34,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("DEBUG: Loading plugins: %v\n", cfg.Enabled)
-
 	model := core.NewModel()
 	model.Plugins, model.LoadErrors = core.LoadPlugins(cfg.Enabled, model.Context)
-
-	fmt.Printf("DEBUG: Loaded plugins: %v\n", len(model.Plugins))
-	fmt.Printf("DEBUG: Load errors: %v\n", model.LoadErrors)
 
 	if _, ok := model.Plugins[cfg.Default]; ok {
 		model.Active = cfg.Default
 	} else if len(model.Plugins) > 0 {
 		model.Active = core.FirstPluginKey(model.Plugins)
 	}
-
-	fmt.Printf("DEBUG: Active plugin: %s\n", model.Active)
 
 	prog := tea.NewProgram(model)
 	if _, err := prog.Run(); err != nil {

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"forger/internal/plugins/codesleuth"
 	"forger/internal/plugins/ignoregrets"
 	"forger/internal/plugins/marchat"
@@ -31,12 +30,9 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	fmt.Printf("DEBUG: Model.Init() called, active plugin: %s\n", m.Active)
-
 	// Call Init() for all plugins, not just the active one
 	var cmds []tea.Cmd
-	for name, plugin := range m.Plugins {
-		fmt.Printf("DEBUG: Calling Init() for plugin: %s\n", name)
+	for _, plugin := range m.Plugins {
 		cmds = append(cmds, plugin.Init())
 	}
 

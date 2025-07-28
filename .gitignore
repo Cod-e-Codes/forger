@@ -36,3 +36,6 @@ go.work.sum
 
 # IgnoreGrets snapshots
 .ignoregrets/snapshots/
+
+# marchat database
+chat.db
