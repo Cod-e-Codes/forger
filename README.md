@@ -5,7 +5,7 @@ Forger is a terminal-native developer dashboard and plugin toolkit built in Go, 
 ## Quick Start
 
 ```bash
-git clone https://github.com/yourusername/forger.git
+git clone https://github.com/Cod-e-Codes/forger.git
 cd forger
 go build ./cmd/forger
 ./forger
