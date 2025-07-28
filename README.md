@@ -1,177 +1,129 @@
 # Forger
 
-Forger is a terminal-native, plugin‑driven developer dashboard built with Go, Bubble Tea and Lip Gloss. It provides a unified interface for your CLI tools, allowing you to switch between tasks—code analysis, snapshots, chat and more—without leaving the terminal.
+![Forger TUI Screenshot](docs/screenshot.png)
 
-## Table of Contents
+Forger is a terminal-native developer dashboard and plugin toolkit built in Go, using [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss). It integrates multiple CLI tools into a unified, high‑performance TUI environment for static analysis, code navigation, environment inspection, and more.
 
-1. [Features](#features)
-2. [Installation](#installation)
-3. [Configuration](#configuration)
-4. [Usage](#usage)
-5. [Plugins](#plugins)
-6. [Keybindings](#keybindings)
-7. [Plugin Development](#plugin-development)
-8. [Contributing](#contributing)
-9. [License](#license)
+## Quick Start
 
----
+```bash
+git clone https://github.com/yourusername/forger.git
+cd forger
+go build ./cmd/forger
+./forger
+```
 
 ## Features
 
-* **Modular Plugin System**
-  Dynamically load and configure plugins for snapshots, code analysis, chat overlays, and more.
+* Plugin-based architecture with live plugin switching
+* First-class support for tools like `marchat`, `ignoregrets`, and `codesleuth`
+* Sidebar navigation with descriptions and previews
+* Overlay toggles for help, logs, and plugin actions
+* Configurable via `forger.json`
+* Extensible with minimal plugin boilerplate
 
-* **Deterministic Navigation**
-  Sidebar lists plugins in alphabetical order; cycle with up/down arrows or tab.
+## Project Structure
 
-* **Overlay Support**
-  Toggle a chat overlay (or other modal) without losing context.
-
-* **Shared Context**
-  Plugins share mutable state for seamless data exchange.
-
-* **Error Reporting**
-  Load errors and runtime issues are displayed in‑app or logged to stderr.
-
----
+```
+forger/
+├── cmd/forger/           # Main entrypoint
+│   └── main.go
+├── internal/core/        # Core application logic
+│   ├── context.go        # Shared application state
+│   ├── log.go            # Logging and error capture
+│   ├── messages.go       # Message definitions
+│   ├── model.go          # Main Bubble Tea model
+│   └── plugin.go         # Plugin interface and manager
+├── internal/plugins/     # Built-in plugins
+│   ├── ignoregrets/
+│   ├── codesleuth/
+│   └── marchat/
+├── docs/                 # Documentation and assets (e.g., screenshots)
+│   └── screenshot.png
+└── forger.json           # Configuration file
+```
 
 ## Installation
 
-1. Clone the repository
+Requires Go 1.20+
 
-   ```bash
-   git clone https://github.com/username/forger.git
-   cd forger
-   ```
+```bash
+git clone https://github.com/yourusername/forger.git
+cd forger
+go build ./cmd/forger
+```
 
-2. Build the binary
+Optional dependencies (for latest features):
 
-   ```bash
-   go build -o forger ./cmd/forger
-   ```
-
-3. Ensure your tools are installed and in `PATH` (e.g., Go, Bubble Tea dependencies).
-
----
+```bash
+go install github.com/charmbracelet/bubbletea@latest
+go install github.com/charmbracelet/lipgloss@latest
+```
 
 ## Configuration
 
-Forger uses a simple JSON file (`forger.json`) in the working directory:
+Forger loads plugins from a `forger.json` file in the working directory. The JSON schema includes an optional default plugin and an enabled list.
 
 ```json
 {
   "default": "ignoregrets",
   "enabled": [
+    "marchat",
     "ignoregrets",
-    "codesleuth",
-    "marchat"
+    "codesleuth"
   ]
 }
 ```
 
-* `default`  – the plugin to select on startup
-* `enabled`  – list of plugin names to load
-
----
+* `default` (optional) — plugin selected at startup
+* `enabled`         — list of plugin names to load
 
 ## Usage
-
-Run Forger from your terminal:
 
 ```bash
 ./forger
 ```
 
-Navigate the interface:
+### Keybindings
 
-* **Up/Down**: cycle through plugins
-* **c**       : toggle chat overlay (`marchat` plugin)
-* **Esc**     : close overlay
-* **q / Ctrl+C**: quit Forger
-
-Each plugin defines its own commands and views once activated.
-
----
-
-## Plugins
-
-Plugins live under `internal/plugins` (or your preferred layout) and must implement the `core.Plugin` interface:
-
-```go
-type Plugin interface {
-    Init() tea.Cmd
-    Update(msg tea.Msg) (Plugin, tea.Cmd)
-    View() string
-    Name() string
-}
-```
-
-Included plugins:
-
-* **ignoregrets** — view and restore Git‑ignored file snapshots
-* **codesleuth**  — visualize COBOL IR and call/control flow graphs
-* **marchat**     — chat overlay for your terminal chat application
-
----
-
-## Keybindings
-
-Forger reserves the following keys by default:
-
-| Key       | Action                      |
-| --------- | --------------------------- |
-| ↑ / ↓     | Select previous/next plugin |
-| c         | Toggle `marchat` overlay    |
-| Esc       | Close overlay               |
-| q, Ctrl+C | Quit Forger                 |
-
-Individual plugins may introduce additional keybindings once active.
-
----
+| Key       | Action                          |
+| --------- | ------------------------------- |
+| Up / Down | Select previous/next plugin     |
+| Tab       | Next plugin                     |
+| c         | Toggle chat overlay (`marchat`) |
+| Esc       | Close overlay                   |
+| q, Ctrl+C | Quit Forger                     |
 
 ## Plugin Development
 
-1. Create a new directory under `internal/plugins/`
-2. Implement the `Plugin` interface
-3. Register the plugin in `internal/core/registry.go`
-4. Update `forger.json` and add your plugin name to `enabled`
-
-Example skeleton:
+Plugins are Go packages placed under `internal/plugins/<name>` and must implement the following interface:
 
 ```go
-package myplugin
-
-import tea "github.com/charmbracelet/bubbletea"
-
-func New(ctx *core.Context) core.Plugin {
-    return &Plugin{}
-}
-
-type Plugin struct {}
-
-func (p *Plugin) Init() tea.Cmd { return nil }
-
-func (p *Plugin) Update(msg tea.Msg) (core.Plugin, tea.Cmd) {
-    return p, nil
-}
-
-func (p *Plugin) View() string {
-    return "MyPlugin View"
-}
-
-func (p *Plugin) Name() string {
-    return "myplugin"
+type Plugin interface {
+  Name() string           // Unique identifier
+  Description() string    // Short summary for sidebar or help overlay
+  Init() tea.Cmd          // Initialization command
+  Update(msg tea.Msg) (Plugin, tea.Cmd)
+  View() string           // Render output
 }
 ```
 
----
+To create a new plugin:
 
-## Contributing
+1. Create a folder under `internal/plugins/`, e.g., `internal/plugins/myplugin/`.
+2. Implement the `Plugin` interface in `plugin.go`.
+3. Register the plugin in `internal/core/registry.go` by adding a factory entry.
+4. Add the plugin name to `enabled` in `forger.json`.
 
-Contributions are welcome. Please open an issue or submit a pull request for enhancements, bug fixes or new plugins. Follow existing code style and add tests where applicable.
+See `internal/plugins/marchat` for a complete example.
 
----
+## Troubleshooting
+
+* **No plugins loaded**: Verify that `forger.json` exists and lists valid names for `enabled`.
+* **Plugin not found**: Ensure the plugin directory name matches the entry in `forger.json` and is registered in `registry.go`.
+* **Visual glitches**: Resize the terminal or use a compatible emulator.
+* **Verbose logging**: Run with `FORGER_LOG=debug forger` to enable detailed output.
 
 ## License
 
-Forger is released under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the [MIT License](./LICENSE).
