@@ -1,6 +1,5 @@
 # Forger
 
-![Go Version](https://img.shields.io/badge/go-1.20+-blue)
 [![Go Version](https://img.shields.io/badge/go-1.20+-blue)](https://go.dev/doc/install)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
