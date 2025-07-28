@@ -1,0 +1,8 @@
+retention: 10
+snapshot_on:
+    - commit
+restore_on:
+    - checkout
+hooks_enabled: false
+exclude: []
+include: []
