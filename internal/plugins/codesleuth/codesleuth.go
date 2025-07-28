@@ -3,6 +3,7 @@ package codesleuth
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -17,8 +18,6 @@ type Plugin struct {
 	analysisFiles []AnalysisFile
 	selectedIndex int
 	output        string
-	errorMsg      string
-	status        string
 }
 
 type AnalysisFile struct {
@@ -52,9 +51,10 @@ func (p *Plugin) Init() tea.Cmd {
 }
 
 func (p *Plugin) checkAvailability() tea.Msg {
-	cmd := exec.Command("codesleuth", "--help")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "--help")
 	if err := cmd.Run(); err != nil {
-		return AvailabilityMsg{Available: false, Error: "codesleuth not found in PATH"}
+		return AvailabilityMsg{Available: false, Error: "codesleuth not found"}
 	}
 	return AvailabilityMsg{Available: true}
 }
@@ -104,7 +104,8 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 }
 
 func (p *Plugin) analyzeCurrentDirectory() tea.Msg {
-	cmd := exec.Command("codesleuth", "analyze", ".", "--json")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "analyze", ".", "--json")
 	output, err := cmd.Output()
 	if err != nil {
 		return AnalysisResultMsg{
@@ -133,7 +134,8 @@ func (p *Plugin) analyzeCurrentDirectory() tea.Msg {
 }
 
 func (p *Plugin) analyzeFile(file AnalysisFile) tea.Msg {
-	cmd := exec.Command("codesleuth", "analyze", file.Path, "--json")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--json")
 	output, err := cmd.Output()
 	if err != nil {
 		return CommandResultMsg{
@@ -157,7 +159,8 @@ func (p *Plugin) analyzeFile(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) showIRDiagram(file AnalysisFile) tea.Msg {
-	cmd := exec.Command("codesleuth", "analyze", file.Path, "--mermaid")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--mermaid")
 	output, err := cmd.Output()
 	if err != nil {
 		return CommandResultMsg{
@@ -173,7 +176,8 @@ func (p *Plugin) showIRDiagram(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) findReferences(file AnalysisFile) tea.Msg {
-	cmd := exec.Command("codesleuth", "analyze", file.Path, "--references")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--references")
 	output, err := cmd.Output()
 	if err != nil {
 		return CommandResultMsg{
@@ -189,7 +193,8 @@ func (p *Plugin) findReferences(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) showCallGraph(file AnalysisFile) tea.Msg {
-	cmd := exec.Command("codesleuth", "analyze", file.Path, "--call-graph")
+	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--call-graph")
 	output, err := cmd.Output()
 	if err != nil {
 		return CommandResultMsg{

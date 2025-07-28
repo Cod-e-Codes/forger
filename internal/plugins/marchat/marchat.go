@@ -2,6 +2,7 @@ package marchat
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -45,10 +46,11 @@ func (p *Plugin) Init() tea.Cmd {
 }
 
 func (p *Plugin) checkServer() tea.Msg {
-	// Check if marchat server is running
-	cmd := exec.Command("marchat-client", "--help")
+	// Check if marchat server is running using full path
+	marchatClientPath := os.Getenv("GOPATH") + "/bin/marchat-client.exe"
+	cmd := exec.Command(marchatClientPath, "--help")
 	if err := cmd.Run(); err != nil {
-		return ServerCheckMsg{Available: false, Error: "marchat-client not found in PATH"}
+		return ServerCheckMsg{Available: false, Error: "marchat-client not found"}
 	}
 	return ServerCheckMsg{Available: true}
 }

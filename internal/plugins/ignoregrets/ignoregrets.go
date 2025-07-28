@@ -2,6 +2,7 @@ package ignoregrets
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -41,9 +42,10 @@ func (p *Plugin) Init() tea.Cmd {
 }
 
 func (p *Plugin) checkAvailability() tea.Msg {
-	cmd := exec.Command("ignoregrets", "--help")
+	ignoregretsPath := os.Getenv("GOPATH") + "/bin/ignoregrets.exe"
+	cmd := exec.Command(ignoregretsPath, "--help")
 	if err := cmd.Run(); err != nil {
-		return AvailabilityMsg{Available: false, Error: "ignoregrets not found in PATH"}
+		return AvailabilityMsg{Available: false, Error: "ignoregrets not found"}
 	}
 	return AvailabilityMsg{Available: true}
 }
@@ -93,7 +95,8 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 }
 
 func (p *Plugin) createSnapshot() tea.Msg {
-	cmd := exec.Command("ignoregrets", "snapshot")
+	ignoregretsPath := os.Getenv("GOPATH") + "/bin/ignoregrets.exe"
+	cmd := exec.Command(ignoregretsPath, "snapshot")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
@@ -108,7 +111,8 @@ func (p *Plugin) createSnapshot() tea.Msg {
 }
 
 func (p *Plugin) listSnapshots() tea.Msg {
-	cmd := exec.Command("ignoregrets", "list")
+	ignoregretsPath := os.Getenv("GOPATH") + "/bin/ignoregrets.exe"
+	cmd := exec.Command(ignoregretsPath, "list")
 	output, err := cmd.Output()
 	if err != nil {
 		return SnapshotsMsg{Snapshots: []Snapshot{}}
@@ -120,7 +124,8 @@ func (p *Plugin) listSnapshots() tea.Msg {
 }
 
 func (p *Plugin) restoreSnapshot(snapshot Snapshot) tea.Msg {
-	cmd := exec.Command("ignoregrets", "restore", "--dry-run")
+	ignoregretsPath := os.Getenv("GOPATH") + "/bin/ignoregrets.exe"
+	cmd := exec.Command(ignoregretsPath, "restore", "--dry-run")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
@@ -130,12 +135,13 @@ func (p *Plugin) restoreSnapshot(snapshot Snapshot) tea.Msg {
 	}
 	return CommandResultMsg{
 		Success: true,
-		Output:  fmt.Sprintf("Restore preview:\n%s", output),
+		Output:  fmt.Sprintf("Restore preview for %s:\n%s", snapshot.Commit[:8], output),
 	}
 }
 
 func (p *Plugin) deleteSnapshot(snapshot Snapshot) tea.Msg {
-	cmd := exec.Command("ignoregrets", "prune", "--retention", "0")
+	ignoregretsPath := os.Getenv("GOPATH") + "/bin/ignoregrets.exe"
+	cmd := exec.Command(ignoregretsPath, "prune", "--retention", "0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return CommandResultMsg{
@@ -145,7 +151,7 @@ func (p *Plugin) deleteSnapshot(snapshot Snapshot) tea.Msg {
 	}
 	return CommandResultMsg{
 		Success: true,
-		Output:  fmt.Sprintf("Snapshots pruned:\n%s", output),
+		Output:  fmt.Sprintf("Snapshots pruned (including %s):\n%s", snapshot.Commit[:8], output),
 	}
 }
 
