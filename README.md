@@ -118,7 +118,8 @@ Remove-Item -Recurse -Force temp-codesleuth
 ```
 
 ### 5. Navigate the Interface
-- Use **Up/Down arrows** to switch between plugins
+- Use **Tab** to switch between plugins
+- Use **Shift+Tab** to switch backwards between plugins
 - Press **'c'** to open MarChat overlay
 - Press **'q'** or **Ctrl+C** to quit
 - Press **'esc'** to close overlays
@@ -130,7 +131,7 @@ Remove-Item -Recurse -Force temp-codesleuth
 - **R**: Restore snapshot (preview)
 - **D**: Delete old snapshots
 - **L**: Refresh list
-- **↑/↓**: Navigate snapshots
+- **↑/↓**: Navigate snapshots (when plugin is active)
 - **Enter**: Restore selected snapshot
 
 ### CodeSleuth
@@ -138,7 +139,7 @@ Remove-Item -Recurse -Force temp-codesleuth
 - **I**: Show IR diagram
 - **R**: Find references
 - **C**: Show call graph
-- **↑/↓**: Navigate files
+- **↑/↓**: Navigate files (when plugin is active)
 - **Enter**: Analyze selected file
 
 ### MarChat

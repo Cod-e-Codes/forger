@@ -22,6 +22,7 @@ type Plugin struct {
 	input         string
 	connected     bool
 	errorMsg      string
+	result        string // Add result field for command feedback
 }
 
 type Message struct {
@@ -69,9 +70,10 @@ func (p *Plugin) checkServer() tea.Cmd {
 func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 	switch msg := msg.(type) {
 	case ServerCheckMsg:
-		fmt.Printf("DEBUG: MarChat received ServerCheckMsg: Available=%v, Error=%s\n", msg.Available, msg.Error)
 		p.serverRunning = msg.Available
 		p.errorMsg = msg.Error
+		// Update connection status based on server availability
+		p.connected = msg.Available
 		return p, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -79,6 +81,11 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 			if p.input != "" {
 				// Send message logic would go here
 				p.messages = append(p.messages, Message{Username: "You", Content: p.input, Timestamp: time.Now(), Type: "message"})
+				if p.connected {
+					p.result = "✅ Message sent: " + p.input
+				} else {
+					p.result = "❌ Not connected to server"
+				}
 				p.input = ""
 			}
 		case "backspace":
@@ -111,6 +118,21 @@ func (p *Plugin) View() string {
 	} else {
 		sb.WriteString("│  ✅ MarChat Server Available                            │\n")
 		sb.WriteString("│                                                             │\n")
+
+		// Show connection status
+		if p.connected {
+			sb.WriteString("│  🔗 Connected to server                               │\n")
+		} else {
+			sb.WriteString("│  🔌 Disconnected from server                          │\n")
+		}
+		sb.WriteString("│                                                             │\n")
+
+		// Show feedback if any
+		if p.result != "" {
+			sb.WriteString("│  Status: " + p.result + "                                    │\n")
+			sb.WriteString("│                                                             │\n")
+		}
+
 		sb.WriteString("│  Chat History:                                          │\n")
 		sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
 

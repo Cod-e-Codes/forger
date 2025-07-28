@@ -18,6 +18,7 @@ type Plugin struct {
 	analysisFiles []AnalysisFile
 	selectedIndex int
 	output        string
+	result        string // Add result field for command feedback
 }
 
 type AnalysisFile struct {
@@ -73,12 +74,19 @@ func (p *Plugin) checkAvailability() tea.Cmd {
 func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 	switch msg := msg.(type) {
 	case AvailabilityMsg:
-		fmt.Printf("DEBUG: CodeSleuth received AvailabilityMsg: Available=%v, Error=%s\n", msg.Available, msg.Error)
 		p.available = msg.Available
 		return p, nil
 	case AnalysisResultMsg:
 		p.analysisFiles = msg.Result.Files
 		p.output = msg.Result.Summary
+		return p, nil
+	case CommandResultMsg:
+		// Display command results
+		if msg.Success {
+			p.result = "✅ " + msg.Output
+		} else {
+			p.result = "❌ " + msg.Output
+		}
 		return p, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -241,6 +249,26 @@ func (p *Plugin) View() string {
 	} else {
 		sb.WriteString("│  ✅ CodeSleuth Available                                  │\n")
 		sb.WriteString("│                                                             │\n")
+
+		// Show command results if any
+		if p.result != "" {
+			sb.WriteString("│  Result:                                                │\n")
+			sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
+			lines := strings.Split(p.result, "\n")
+			for i, line := range lines {
+				if i >= 3 { // Limit to 3 lines
+					sb.WriteString("│  │ ... (truncated)                                    │ │\n")
+					break
+				}
+				if len(line) > 55 {
+					line = line[:52] + "..."
+				}
+				sb.WriteString(fmt.Sprintf("│  │ %-55s │ │\n", line))
+			}
+			sb.WriteString("│  └─────────────────────────────────────────────────────┘ │\n")
+			sb.WriteString("│                                                             │\n")
+		}
+
 		sb.WriteString("│  Analysis Files:                                          │\n")
 		sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
 

@@ -86,16 +86,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.Overlay = nil
 			return m, nil
-		case "up":
-			m.Active = PrevPluginKey(m.Plugins, m.Active)
-			return m, nil
-		case "down":
+		case "tab":
+			// Use tab to switch between plugins instead of up/down
 			m.Active = NextPluginKey(m.Plugins, m.Active)
+			return m, nil
+		case "shift+tab":
+			// Use shift+tab to go backwards
+			m.Active = PrevPluginKey(m.Plugins, m.Active)
 			return m, nil
 		}
 	}
 
-	// Update active plugin
+	// Update active plugin - let it handle all keys including up/down
 	if p, ok := m.Plugins[m.Active]; ok {
 		updated, cmd := p.Update(msg)
 		m.Plugins[m.Active] = updated

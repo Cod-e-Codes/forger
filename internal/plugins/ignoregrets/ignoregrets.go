@@ -20,6 +20,7 @@ type Plugin struct {
 	output        string
 	errorMsg      string
 	status        string
+	result        string // Add result field for command feedback
 }
 
 type Snapshot struct {
@@ -60,6 +61,15 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 		return p, nil
 	case SnapshotsMsg:
 		p.snapshots = msg.Snapshots
+		return p, nil
+	case CommandResultMsg:
+		// Display command results
+		if msg.Success {
+			p.result = "✅ " + msg.Output
+		} else {
+			p.result = "❌ " + msg.Output
+		}
+		// Clear result after 3 seconds (in a real app, you'd use a timer)
 		return p, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -196,6 +206,26 @@ func (p *Plugin) View() string {
 	} else {
 		sb.WriteString("│  ✅ IgnoreGrets Available                                │\n")
 		sb.WriteString("│                                                             │\n")
+
+		// Show command results if any
+		if p.result != "" {
+			sb.WriteString("│  Result:                                                │\n")
+			sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
+			lines := strings.Split(p.result, "\n")
+			for i, line := range lines {
+				if i >= 3 { // Limit to 3 lines
+					sb.WriteString("│  │ ... (truncated)                                    │ │\n")
+					break
+				}
+				if len(line) > 55 {
+					line = line[:52] + "..."
+				}
+				sb.WriteString(fmt.Sprintf("│  │ %-55s │ │\n", line))
+			}
+			sb.WriteString("│  └─────────────────────────────────────────────────────┘ │\n")
+			sb.WriteString("│                                                             │\n")
+		}
+
 		sb.WriteString("│  Snapshots:                                              │\n")
 		sb.WriteString("│  ┌─────────────────────────────────────────────────────┐ │\n")
 
