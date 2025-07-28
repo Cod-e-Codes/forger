@@ -19,56 +19,109 @@ Forger is a **terminal-native developer toolkit** that provides a unified interf
 
 ## Current Plugins
 
-### IgnoreGrets ✅ **Integrated**
+### IgnoreGrets ✅ **Fully Integrated**
 - **Purpose**: Snapshot management and Git workflow tools
 - **Features**: Create, list, restore, and delete snapshots
 - **Integration**: Direct CLI wrapper with real ignoregrets commands
 - **Use Case**: Managing code states and quick rollbacks
-- **Installation**: `go install github.com/Cod-e-Codes/ignoregrets@latest`
+- **Status**: ✅ **Working** - Available and functional
 
-### CodeSleuth ✅ **Integrated**  
+### CodeSleuth ✅ **Fully Integrated**  
 - **Purpose**: Static code analysis and IR visualization
 - **Features**: Analyze files, show IR diagrams, find references, call graphs
 - **Integration**: CLI wrapper with JSON output parsing
 - **Use Case**: Understanding code structure and dependencies
-- **Installation**: `go install github.com/Cod-e-Codes/codesleuth@latest`
+- **Status**: ✅ **Working** - Available and functional
 
-### MarChat ✅ **Integrated**
+### MarChat ✅ **Fully Integrated**
 - **Purpose**: Terminal-based chat interface
 - **Features**: Send messages, save/load chat history, clear conversations
 - **Integration**: Direct integration with marchat server/client
 - **Use Case**: Developer communication and note-taking
-- **Installation**: `go install github.com/Cod-e-Codes/marchat@latest`
+- **Status**: ✅ **Working** - Available and functional
 
 ## Quick Start
 
-1. **Build the project**:
-   ```bash
-   go build ./cmd/forger
-   ```
+### 1. Build Forger
+```bash
+go build ./cmd/forger
+```
 
-2. **Install required tools** (optional, for full functionality):
-   ```bash
-   # Install marchat for chat functionality
-   go install github.com/Cod-e-Codes/marchat@latest
-   
-   # Install ignoregrets for snapshot management
-   go install github.com/Cod-e-Codes/ignoregrets@latest
-   
-   # Install codesleuth for code analysis
-   go install github.com/Cod-e-Codes/codesleuth@latest
-   ```
+### 2. Install Required CLI Tools
 
-3. **Run Forger**:
-   ```bash
-   ./forger
-   ```
+**Important**: These tools must be installed and available in your `GOPATH/bin` directory for Forger to detect them properly.
 
-4. **Navigate the interface**:
-   - Use **Up/Down arrows** to switch between plugins
-   - Press **'c'** to open MarChat overlay
-   - Press **'q'** or **Ctrl+C** to quit
-   - Press **'esc'** to close overlays
+#### Install MarChat
+```bash
+# Clone the repository
+git clone https://github.com/Cod-e-Codes/marchat.git temp-marchat
+cd temp-marchat
+
+# Build the client and server
+go build ./client
+go build ./server
+
+# Copy executables to GOPATH/bin
+copy client.exe $env:GOPATH\bin\marchat-client.exe
+copy server.exe $env:GOPATH\bin\marchat-server.exe
+
+# Clean up
+cd ..
+Remove-Item -Recurse -Force temp-marchat
+```
+
+#### Install IgnoreGrets
+```bash
+# Clone the repository
+git clone https://github.com/Cod-e-Codes/ignoregrets.git temp-ignoregrets
+cd temp-ignoregrets
+
+# Build the executable
+go build .
+
+# Copy executable to GOPATH/bin
+copy ignoregrets.exe $env:GOPATH\bin\ignoregrets.exe
+
+# Clean up
+cd ..
+Remove-Item -Recurse -Force temp-ignoregrets
+```
+
+#### Install CodeSleuth
+```bash
+# Clone the repository
+git clone https://github.com/Cod-e-Codes/codesleuth.git temp-codesleuth
+cd temp-codesleuth
+
+# Build the executable
+go build ./cmd
+
+# Copy executable to GOPATH/bin
+copy cmd.exe $env:GOPATH\bin\codesleuth.exe
+
+# Clean up
+cd ..
+Remove-Item -Recurse -Force temp-codesleuth
+```
+
+### 3. Verify Installation
+```bash
+# Test that all executables are available
+& "$env:GOPATH\bin\marchat-client.exe" --help
+& "$env:GOPATH\bin\ignoregrets.exe" --help
+& "$env:GOPATH\bin\codesleuth.exe" --help
+```
+
+### 4. Run Forger
+```bash
+./forger
+```
+
+### 5. Navigate the Interface
+- Use **Up/Down arrows** to switch between plugins
+- Press **'c'** to open MarChat overlay
+- Press **'q'** or **Ctrl+C** to quit
+- Press **'esc'** to close overlays
 
 ## Plugin-Specific Controls
 
@@ -111,6 +164,42 @@ Forger uses `forger.json` for configuration:
 - `default`: The plugin to show when Forger starts
 - `enabled`: List of plugins to load
 
+## Troubleshooting
+
+### Plugins Not Available
+If plugins show as "Not Available":
+
+1. **Check GOPATH**: Ensure your `GOPATH` is set correctly
+   ```bash
+   echo $env:GOPATH
+   # Should show: C:\Users\codyl\go
+   ```
+
+2. **Verify Executables**: Check that executables exist in `GOPATH/bin`
+   ```bash
+   Test-Path "$env:GOPATH\bin\marchat-client.exe"
+   Test-Path "$env:GOPATH\bin\ignoregrets.exe"
+   Test-Path "$env:GOPATH\bin\codesleuth.exe"
+   ```
+
+3. **Test Executables**: Try running them directly
+   ```bash
+   & "$env:GOPATH\bin\marchat-client.exe" --help
+   & "$env:GOPATH\bin\ignoregrets.exe" --help
+   & "$env:GOPATH\bin\codesleuth.exe" --help
+   ```
+
+4. **Rebuild Forger**: After installing tools, rebuild Forger
+   ```bash
+   go build ./cmd/forger
+   ```
+
+### Common Issues
+
+- **"Plugin not found"**: Ensure the plugin is listed in `forger.json` under `enabled`
+- **"Executable not found"**: Verify the tool was built and copied to `GOPATH/bin` correctly
+- **"Permission denied"**: Run PowerShell as Administrator if needed
+
 ## Architecture
 
 ```
@@ -151,27 +240,20 @@ go build ./cmd/forger
 
 ## Status
 
-This is a **working release** with real integrations:
+This is a **fully working release** with real integrations:
 
 - ✅ **IgnoreGrets**: Full CLI integration with snapshot management
-- ✅ **CodeSleuth**: Code analysis with JSON output parsing
+- ✅ **CodeSleuth**: Code analysis with JSON output parsing  
 - ✅ **MarChat**: Chat interface with server detection
 - 🔄 **Future**: Additional plugins (ascii-colorizer, parsec, etc.)
 
 ## Tool Dependencies
 
-For full functionality, install these tools:
+For full functionality, these tools must be installed in `GOPATH/bin`:
 
-```bash
-# Required for chat functionality
-go install github.com/Cod-e-Codes/marchat@latest
-
-# Required for snapshot management
-go install github.com/Cod-e-Codes/ignoregrets@latest
-
-# Required for code analysis
-go install github.com/Cod-e-Codes/codesleuth@latest
-```
+- **MarChat**: `marchat-client.exe` and `marchat-server.exe`
+- **IgnoreGrets**: `ignoregrets.exe`
+- **CodeSleuth**: `codesleuth.exe`
 
 ## Future Enhancements
 

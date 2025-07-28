@@ -1,6 +1,10 @@
 package core
 
 import (
+	"fmt"
+	"forger/internal/plugins/codesleuth"
+	"forger/internal/plugins/ignoregrets"
+	"forger/internal/plugins/marchat"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -27,10 +31,17 @@ func NewModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	if p, ok := m.Plugins[m.Active]; ok {
-		return p.Init()
+	fmt.Printf("DEBUG: Model.Init() called, active plugin: %s\n", m.Active)
+
+	// Call Init() for all plugins, not just the active one
+	var cmds []tea.Cmd
+	for name, plugin := range m.Plugins {
+		fmt.Printf("DEBUG: Calling Init() for plugin: %s\n", name)
+		cmds = append(cmds, plugin.Init())
 	}
-	return nil
+
+	// Return a command that runs all the init commands
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -42,6 +53,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Overlay = nil
 		}
 		return m, cmd
+	}
+
+	// Check if this is an availability message that should be sent to all plugins
+	switch msg.(type) {
+	case marchat.ServerCheckMsg, codesleuth.AvailabilityMsg, ignoregrets.AvailabilityMsg:
+		// Route availability messages to all plugins
+		var cmds []tea.Cmd
+		for name, plugin := range m.Plugins {
+			updated, cmd := plugin.Update(msg)
+			m.Plugins[name] = updated
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+		if len(cmds) > 0 {
+			return m, tea.Batch(cmds...)
+		}
+		return m, nil
 	}
 
 	switch msg := msg.(type) {

@@ -47,21 +47,33 @@ func New(ctx *types.Context) types.Plugin {
 }
 
 func (p *Plugin) Init() tea.Cmd {
-	return p.checkAvailability
+	return p.checkAvailability()
 }
 
-func (p *Plugin) checkAvailability() tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
-	cmd := exec.Command(codesleuthPath, "--help")
-	if err := cmd.Run(); err != nil {
-		return AvailabilityMsg{Available: false, Error: "codesleuth not found"}
+func (p *Plugin) checkAvailability() tea.Cmd {
+	return func() tea.Msg {
+		codesleuthPath := "C:\\Users\\codyl\\go\\bin\\codesleuth.exe"
+
+		// Debug: print the path being used
+		fmt.Printf("DEBUG: Looking for codesleuth at: %s\n", codesleuthPath)
+
+		// Debug: check if file exists
+		if _, err := os.Stat(codesleuthPath); os.IsNotExist(err) {
+			return AvailabilityMsg{Available: false, Error: fmt.Sprintf("codesleuth not found at: %s", codesleuthPath)}
+		}
+
+		cmd := exec.Command(codesleuthPath, "--help")
+		if err := cmd.Run(); err != nil {
+			return AvailabilityMsg{Available: false, Error: fmt.Sprintf("codesleuth failed to run: %v", err)}
+		}
+		return AvailabilityMsg{Available: true}
 	}
-	return AvailabilityMsg{Available: true}
 }
 
 func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 	switch msg := msg.(type) {
 	case AvailabilityMsg:
+		fmt.Printf("DEBUG: CodeSleuth received AvailabilityMsg: Available=%v, Error=%s\n", msg.Available, msg.Error)
 		p.available = msg.Available
 		return p, nil
 	case AnalysisResultMsg:
@@ -104,7 +116,7 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 }
 
 func (p *Plugin) analyzeCurrentDirectory() tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
 	cmd := exec.Command(codesleuthPath, "analyze", ".", "--json")
 	output, err := cmd.Output()
 	if err != nil {
@@ -134,7 +146,7 @@ func (p *Plugin) analyzeCurrentDirectory() tea.Msg {
 }
 
 func (p *Plugin) analyzeFile(file AnalysisFile) tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
 	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--json")
 	output, err := cmd.Output()
 	if err != nil {
@@ -159,7 +171,7 @@ func (p *Plugin) analyzeFile(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) showIRDiagram(file AnalysisFile) tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
 	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--mermaid")
 	output, err := cmd.Output()
 	if err != nil {
@@ -176,7 +188,7 @@ func (p *Plugin) showIRDiagram(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) findReferences(file AnalysisFile) tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
 	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--references")
 	output, err := cmd.Output()
 	if err != nil {
@@ -193,7 +205,7 @@ func (p *Plugin) findReferences(file AnalysisFile) tea.Msg {
 }
 
 func (p *Plugin) showCallGraph(file AnalysisFile) tea.Msg {
-	codesleuthPath := os.Getenv("GOPATH") + "/bin/codesleuth.exe"
+	codesleuthPath := os.Getenv("GOPATH") + "\\bin\\codesleuth.exe"
 	cmd := exec.Command(codesleuthPath, "analyze", file.Path, "--call-graph")
 	output, err := cmd.Output()
 	if err != nil {

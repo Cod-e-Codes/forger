@@ -42,37 +42,43 @@ func New(ctx *types.Context) types.Plugin {
 }
 
 func (p *Plugin) Init() tea.Cmd {
-	return p.checkServer
+	return p.checkServer()
 }
 
-func (p *Plugin) checkServer() tea.Msg {
-	// Check if marchat server is running using full path
-	marchatClientPath := os.Getenv("GOPATH") + "/bin/marchat-client.exe"
-	cmd := exec.Command(marchatClientPath, "--help")
-	if err := cmd.Run(); err != nil {
-		return ServerCheckMsg{Available: false, Error: "marchat-client not found"}
+func (p *Plugin) checkServer() tea.Cmd {
+	return func() tea.Msg {
+		// Check if marchat server is running using full path
+		marchatClientPath := "C:\\Users\\codyl\\go\\bin\\marchat-client.exe"
+
+		// Debug: print the path being used
+		fmt.Printf("DEBUG: Looking for marchat-client at: %s\n", marchatClientPath)
+
+		// Debug: check if file exists
+		if _, err := os.Stat(marchatClientPath); os.IsNotExist(err) {
+			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("marchat-client not found at: %s", marchatClientPath)}
+		}
+
+		cmd := exec.Command(marchatClientPath, "--help")
+		if err := cmd.Run(); err != nil {
+			return ServerCheckMsg{Available: false, Error: fmt.Sprintf("marchat-client failed to run: %v", err)}
+		}
+		return ServerCheckMsg{Available: true}
 	}
-	return ServerCheckMsg{Available: true}
 }
 
 func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 	switch msg := msg.(type) {
 	case ServerCheckMsg:
+		fmt.Printf("DEBUG: MarChat received ServerCheckMsg: Available=%v, Error=%s\n", msg.Available, msg.Error)
 		p.serverRunning = msg.Available
-		if !msg.Available {
-			p.errorMsg = "MarChat client not found. Install from: https://github.com/Cod-e-Codes/marchat"
-		}
+		p.errorMsg = msg.Error
 		return p, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
 			if p.input != "" {
-				p.messages = append(p.messages, Message{
-					Username:  p.username,
-					Content:   p.input,
-					Timestamp: time.Now(),
-					Type:      "message",
-				})
+				// Send message logic would go here
+				p.messages = append(p.messages, Message{Username: "You", Content: p.input, Timestamp: time.Now(), Type: "message"})
 				p.input = ""
 			}
 		case "backspace":
@@ -81,10 +87,6 @@ func (p *Plugin) Update(msg tea.Msg) (types.Plugin, tea.Cmd) {
 			}
 		case "ctrl+c":
 			return p, tea.Quit
-		default:
-			if len(msg.String()) == 1 {
-				p.input += msg.String()
-			}
 		}
 	}
 	return p, nil
